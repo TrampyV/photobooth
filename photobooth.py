@@ -407,7 +407,7 @@ class Photobooth:
         # Reenable lamp
         self.gpio.set_output(self.lamp_channel, 1)
 
-    def single_picture
+    def single_picture(self)
         """implement the 1 picture taking routine"""
         
         # Disable lamp
@@ -422,9 +422,18 @@ class Photobooth:
         # Countdown
         self.show_counter(self.pose_time)
         
-        # Take picture (To be added)
+        # Take picture ( /!\ To be corrected /!\ )
+        self.display.clear()
+        self.display.show_message("S M I L E !!!")
+        self.display.apply()
         
-
+        outfile = self.camera.take_picture("/tmp/photobooth_%02d.jpg" %)
+        
+        # Save single picture
+        output_filename = self.pictures.get_next()
+        output_image.save(output_filename, "JPEG")
+        return output_filename
+       
         # Show 'Wait'
         self.display.clear()
         self.display.show_message("Affichage!\n\nProcessing...")
