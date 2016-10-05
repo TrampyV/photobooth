@@ -34,23 +34,26 @@ picture_basename = datetime.now().strftime("%Y-%m-%d/pic")
 # GPIO channel of switch to shutdown the Photobooth
 gpio_shutdown_channel = 24 # pin 18 in all Raspi-Versions
 
-# GPIO channel of switch to take pictures
-gpio_trigger_channel = 23 # pin 16 in all Raspi-Versions
+# GPIO channel of switch to take 4 pictures
+gpio_trigger4pic_channel = 23 # pin 16 in all Raspi-Versions
+
+# GPIO channel of switch to take a single picture
+gpio_trigger1pic_channel = 17 # pin 11 in all Raspi-Versions
 
 # GPIO output channel for (blinking) lamp
 gpio_lamp_channel = 4 # pin 7 in all Raspi-Versions
 
 # Waiting time in seconds for posing
-pose_time = 5
+pose_time = 3
 
 # Display time for assembled picture
-display_time = 10
+display_time = 5
 
 # Show a slideshow of existing pictures when idle
 idle_slideshow = True
 
 # Display time of pictures in the slideshow
-slideshow_display_time = 5
+slideshow_display_time = 3
 
 ###############
 ### Classes ###
@@ -151,7 +154,7 @@ class Photobooth:
 
             # Display default message
             self.display.clear()
-            self.display.show_message("Hit the button!")
+            self.display.show_message("Appuyez sur le bouton!")
             self.display.apply()
 
             # Wait for an event and handle it
@@ -161,7 +164,7 @@ class Photobooth:
     def _run_slideshow(self):
         while True:
             self.camera.set_idle()
-            self.slideshow.display_next("Hit the button!")
+            self.slideshow.display_next("Appuyez sur le bouton!")
             tic = clock()
             while clock() - tic < self.slideshow_display_time:
                 self.check_and_handle_events()
@@ -195,7 +198,7 @@ class Photobooth:
             r, e = self.display.check_for_event()
 
     def handle_gpio(self, channel):
-        if channel in [ self.trigger_channel, self.shutdown_channel ]:
+        if channel in [ self.trigger4pic_channel, self.shutdown_channel, self.trigger1pic_channel ]:
             self.display.trigger_event(channel)
 
     def handle_event(self, event):
@@ -225,8 +228,10 @@ class Photobooth:
 
     def handle_gpio_event(self, channel):
         """Implements the actions taken for a GPIO event"""
-        if channel == self.trigger_channel:
+        if channel == self.trigger4pic_channel:
             self.take_picture()
+        elif channel== self.trigger1pic_channel:
+            self.single_picture()
         elif channel == self.shutdown_channel:
             self.teardown()
 
@@ -333,7 +338,7 @@ class Photobooth:
                 sleep(1)
 
     def take_picture(self):
-        """Implements the picture taking routine"""
+        """Implements the 4 pictures taking routine"""
         # Disable lamp
         self.gpio.set_output(self.lamp_channel, 0)
 
@@ -387,13 +392,13 @@ class Photobooth:
 
         # Show 'Wait'
         self.display.clear()
-        self.display.show_message("Please wait!\n\nProcessing...")
+        self.display.show_message("Assemblage!\n\nProcessing...")
         self.display.apply()
 
         # Assemble them
         outfile = self.assemble_pictures(filenames)
 
-        # Show pictures for 10 seconds
+        # Show pictures for 5 seconds
         self.display.clear()
         self.display.show_picture(outfile, size, (0,0))
         self.display.apply()
@@ -402,8 +407,37 @@ class Photobooth:
         # Reenable lamp
         self.gpio.set_output(self.lamp_channel, 1)
 
+    def single_picture
+        """implement the 1 picture taking routine"""
+        
+        # Disable lamp
+        self.gpio.set_output(self.lamp_channel, 0)
 
+        # Show pose message
+        self.display.clear()
+        self.display.show_message("POSE!");
+        self.display.apply()
+        sleep(2)
+        
+        # Countdown
+        self.show_counter(self.pose_time)
+        
+        # Take picture (To be added)
+        
 
+        # Show 'Wait'
+        self.display.clear()
+        self.display.show_message("Affichage!\n\nProcessing...")
+        self.display.apply()
+        
+        # Show pictures for 5 seconds
+        self.display.clear()
+        self.display.show_picture(outfile, size, (0,0))
+        self.display.apply()
+        sleep(self.display_time)
+
+        # Reenable lamp
+        self.gpio.set_output(self.lamp_channel, 1)
 
 #################
 ### Functions ###
@@ -411,7 +445,7 @@ class Photobooth:
 
 def main():
     photobooth = Photobooth(display_size, picture_basename, image_size, pose_time, display_time, 
-                            gpio_trigger_channel, gpio_shutdown_channel, gpio_lamp_channel, 
+                            gpio_trigger4pic_channel,gpio_trigger1pic_channel, gpio_shutdown_channel, gpio_lamp_channel, 
                             idle_slideshow, slideshow_display_time)
     photobooth.run()
     photobooth.teardown()
