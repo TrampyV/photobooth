@@ -21,12 +21,13 @@ The following is required for running this photobooth application. I used the ve
 * Optional: [RPi.GPIO](https://pypi.python.org/pypi/RPi.GPIO) (0.5.11)
 * Optional: [gphoto2-cffi](https://github.com/jbaiter/gphoto2-cffi) or [Piggyphoto](https://github.com/alexdu/piggyphoto)
 
-RPi.GPIO is necessary to use external buttons as a trigger but it works just fine without. Triggering is then only possible using touch screen / mouse or key 'c'.
+RPi.GPIO is necessary to use external buttons as a trigger but it works just fine without (only for 4 pictures then). Triggering is then only possible using touch screen / mouse or key 'c'.
 
 ### Hardware
 * [Raspberry Pi](https://www.raspberrypi.org/) (Any device able to run the software stack should work fine)
 * Camera supported by gPhoto. I've used a Canon EOS 500D.
-* Optional: External button that closes GPIO23 (pin 16) and GND.
+* Optional: External button that closes GPIO23 (pin 16) and GND to take 4 pictures and assemble them.
+* Optional: External button that closes GPIO17 (pin 11) and GND to take only one picture.
 
 ## Usage
 Simply download `photobooth.py` or clone the repository and run it.
@@ -52,6 +53,7 @@ Available actions:
 * Press `q`: Exit the application
 * Press `c`: Take four pictures, arrange them in a grid and display them for some seconds.
 * Hit a switch that closes GPIO23 (Pin 16) and GND: Take four pictures, arrange them in a grid and display them for some seconds.
+* Hit a switch that closes GPIO17 (Pin 11) and GND: Take one picture and display it for some seconds.
 * Click anywhere on the screen: Take four pictures, arrange them in a grid and display them for some seconds.
  
 All pictures taken are stored in a subfolder of the current working directory, named `YYYY-mm-dd` after the current date. Existing files are not overwritten.
