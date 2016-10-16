@@ -35,7 +35,7 @@ picture_basename = datetime.now().strftime("%Y-%m-%d/pic")
 gpio_shutdown_channel = 24 # pin 18 in all Raspi-Versions
 
 # GPIO channel of switch to take 4 pictures
-gpio_trigger4pic_channel = 23 # pin 16 in all Raspi-Versions
+gpio_trigger_channel = 23 # pin 16 in all Raspi-Versions
 
 # GPIO channel of switch to take a single picture
 gpio_trigger1pic_channel = 17 # pin 11 in all Raspi-Versions
@@ -57,9 +57,7 @@ slideshow_display_time = 3
 
 ###############
 ### Classes ###
-###############
-
-class PictureList:
+###############class PictureList:
     """A simple helper class.
 
     It provides the filenames for the assembled pictures and keeps count
@@ -115,7 +113,7 @@ class Photobooth:
     """
 
     def __init__(self, display_size, picture_basename, picture_size, pose_time, display_time,
-                 trigger_channel, shutdown_channel, lamp_channel, idle_slideshow, slideshow_display_time):
+                 trigger_channel, shutdown_channel, lamp_channel, idle_slideshow, slideshow_display_time, trigger1pic_channel):
         self.display      = GuiModule('Photobooth', display_size)
         self.pictures     = PictureList(picture_basename)
         self.camera       = CameraModule(picture_size)
@@ -125,6 +123,7 @@ class Photobooth:
         self.display_time = display_time
 
         self.trigger_channel  = trigger_channel
+        self.trigger1pic_channel = trigger1pic_channel
         self.shutdown_channel = shutdown_channel
         self.lamp_channel     = lamp_channel
 
@@ -134,7 +133,7 @@ class Photobooth:
             self.slideshow = Slideshow(display_size, display_time, 
                                        os.path.dirname(os.path.realpath(picture_basename)))
 
-        input_channels    = [ trigger_channel, shutdown_channel ]
+        input_channels    = [ trigger_channel, trigger1pic_channel, shutdown_channel ]
         output_channels   = [ lamp_channel ]
         self.gpio         = GPIO(self.handle_gpio, input_channels, output_channels)
 
@@ -198,7 +197,7 @@ class Photobooth:
             r, e = self.display.check_for_event()
 
     def handle_gpio(self, channel):
-        if channel in [ self.trigger4pic_channel, self.shutdown_channel, self.trigger1pic_channel ]:
+        if channel in [ self.trigger_channel, self.shutdown_channel, self.trigger1pic_channel ]:
             self.display.trigger_event(channel)
 
     def handle_event(self, event):
@@ -219,6 +218,9 @@ class Photobooth:
         # Take pictures
         elif key == ord('c'):
             self.take_picture()
+        #take one picture
+        elif key == ord('v'):
+            self.single_picture()
 
     def handle_mousebutton(self, key, pos):
         """Implements the actions for the different mousebutton events"""
@@ -228,7 +230,7 @@ class Photobooth:
 
     def handle_gpio_event(self, channel):
         """Implements the actions taken for a GPIO event"""
-        if channel == self.trigger4pic_channel:
+        if channel == self.trigger_channel:
             self.take_picture()
         elif channel== self.trigger1pic_channel:
             self.single_picture()
@@ -419,21 +421,51 @@ class Photobooth:
         self.display.apply()
         sleep(2)
         
-        # Countdown
-        self.show_counter(self.pose_time)
+        # Take one pictures
+        filenames = [0]
         
-        # Take picture ( /!\ To be corrected /!\ )
-        self.display.clear()
-        self.display.show_message("S M I L E !!!")
-        self.display.apply()
+            # Countdown
+            self.show_counter(self.pose_time)
+
+            # Try each picture up to 3 times
+            remaining_attempts = 3
+            while remaining_attempts > 0:
+                remaining_attempts = remaining_attempts - 1
+
+                self.display.clear()
+                self.display.show_message("S M I L E !!!")
+                self.display.apply()
+
+                tic = clock()
+
+                try:
+                    filenames[0] = self.camera.single_picture("/tmp/photobooth_%02d.jpg")
+                    remaining_attempts = 0
+                except CameraException as e:
+                    # On recoverable errors: display message and retry
+                    if e.recoverable:
+                        if remaining_attempts > 0:
+                            self.display.clear()
+                            self.display.show_message(e.message)  
+                            self.display.apply()
+                            sleep(5)
+                        else:
+                            raise CameraException("Giving up! Please start over!", False)
+                    else:
+                       raise e
+
+                # Measure used time and sleep a second if too fast 
+                toc = clock() - tic
+                if toc < 1.0:
+                    sleep(1.0 - toc)
         
-        outfile = self.camera.take_picture("/tmp/photobooth_%02d.jpg" %)
+        # Create output image with white background
+        output_image = Image.new('RGB', self.pic_size, (255, 255, 255))
         
-        # Save single picture
+        # Save assembled image
         output_filename = self.pictures.get_next()
         output_image.save(output_filename, "JPEG")
-        return output_filename
-       
+        
         # Show 'Wait'
         self.display.clear()
         self.display.show_message("Affichage!\n\nProcessing...")
@@ -441,7 +473,7 @@ class Photobooth:
         
         # Show pictures for 5 seconds
         self.display.clear()
-        self.display.show_picture(outfile, size, (0,0))
+        self.display.show_picture(output_image, size, (0,0))
         self.display.apply()
         sleep(self.display_time)
 
@@ -454,7 +486,7 @@ class Photobooth:
 
 def main():
     photobooth = Photobooth(display_size, picture_basename, image_size, pose_time, display_time, 
-                            gpio_trigger4pic_channel,gpio_trigger1pic_channel, gpio_shutdown_channel, gpio_lamp_channel, 
+                            gpio_trigger_channel,gpio_trigger1pic_channel, gpio_shutdown_channel, gpio_lamp_channel, 
                             idle_slideshow, slideshow_display_time)
     photobooth.run()
     photobooth.teardown()
