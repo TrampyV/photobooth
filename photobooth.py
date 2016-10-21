@@ -32,13 +32,13 @@ thumb_size = (1176, 784)
 picture_basename = datetime.now().strftime("%Y-%m-%d/pic")
 
 # GPIO channel of switch to shutdown the Photobooth
-gpio_shutdown_channel = 26 # pin 18 in all Raspi-Versions
+gpio_shutdown_channel = 24 # pin 18 in all Raspi-Versions
 
 # GPIO channel of switch to take 4 pictures
-gpio_trigger_channel = 27 # pin 16 in all Raspi-Versions
+gpio_trigger_channel = 23 # pin 16 in all Raspi-Versions
 
 # GPIO channel of switch to take a single picture
-gpio_trigger1pic_channel = 29 # pin 11 in all Raspi-Versions
+gpio_trigger1pic_channel = 17 # pin 11 in all Raspi-Versions
 
 # GPIO output channel for (blinking) lamp
 gpio_lamp_channel = 4 # pin 7 in all Raspi-Versions
@@ -234,10 +234,10 @@ class Photobooth:
         """Implements the actions taken for a GPIO event"""
         if channel == self.trigger_channel:
             self.take_picture()
-        elif channel== self.trigger1pic_channel:
-            self.single_picture()
         elif channel == self.shutdown_channel:
             self.teardown()
+        elif channel== self.trigger1pic_channel:
+			self.single_picture()
 
     def handle_exception(self, msg):
         """Displays an error message and returns"""
