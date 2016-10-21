@@ -109,13 +109,13 @@ class PictureList:
 
 
 class Photobooth:
-    """The main class.
+	"""The main class.
 
     It contains all the logic for the photobooth.
     """
 
     def __init__(self, display_size, picture_basename, picture_size, pose_time, display_time,
-                 trigger_channel, shutdown_channel, lamp_channel, idle_slideshow, slideshow_display_time, trigger1pic_channel):
+                 trigger_channel, trigger1pic_channel, shutdown_channel, lamp_channel, idle_slideshow, slideshow_display_time):
         self.display      = GuiModule('Photobooth', display_size)
         self.pictures     = PictureList(picture_basename)
         self.camera       = CameraModule(picture_size)
@@ -199,7 +199,7 @@ class Photobooth:
             r, e = self.display.check_for_event()
 
     def handle_gpio(self, channel):
-        if channel in [ self.trigger_channel, self.shutdown_channel, self.trigger1pic_channel ]:
+        if channel in [ self.trigger_channel, self.trigger1pic_channel, self.shutdown_channel ]:
             self.display.trigger_event(channel)
 
     def handle_event(self, event):
@@ -234,10 +234,10 @@ class Photobooth:
         """Implements the actions taken for a GPIO event"""
         if channel == self.trigger_channel:
             self.take_picture()
-        elif channel == self.shutdown_channel:
-            self.teardown()
-        elif channel== self.trigger1pic_channel:
-			self.single_picture()
+        elif channel == self.trigger1pic_channel:
+            self.single_picture()
+        elif channel== self.shutdown_channel:
+			self.teardown()
 
     def handle_exception(self, msg):
         """Displays an error message and returns"""
@@ -424,7 +424,6 @@ class Photobooth:
         
         # Take one pictures
         filenames = [0]
-
         # Countdown
         self.show_counter(self.pose_time)
 
